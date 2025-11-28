@@ -46,7 +46,7 @@ from sklearn.metrics import (classification_report, confusion_matrix,
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, plot_tree, export_text
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 
@@ -355,7 +355,11 @@ class ModelTrainer:
                 n_neighbors=5
             ),
             'Decision Tree': DecisionTreeClassifier(
-                random_state=self.random_state
+                random_state=self.random_state,
+                max_depth=10,
+                min_samples_split=5,
+                min_samples_leaf=3,
+                class_weight='balanced'
             ),
             'Naive Bayes': GaussianNB(),
             'Logistic Regression': LogisticRegression(
@@ -561,6 +565,133 @@ class ModelTrainer:
         
         plt.close('all')
         print("\nVisualizações geradas com sucesso!")
+    
+    def analyze_decision_tree(self, X_train, feature_mapping=None, save_path='./'):
+        """
+        Análise específica da árvore de decisão.
+        
+        Parâmetros:
+        -----------
+        X_train : np.array
+            Dados de treino para análise de importância
+        feature_mapping : dict
+            Mapeamento de features (S1, S2, ...) para nomes originais
+        save_path : str
+            Caminho para salvar as visualizações
+        """
+        if 'Decision Tree' not in self.results:
+            print("Modelo Decision Tree não foi treinado!")
+            return
+            
+        print("\n" + "="*70)
+        print("ANÁLISE DETALHADA DA ÁRVORE DE DECISÃO")
+        print("="*70 + "\n")
+        
+        dt_model = self.results['Decision Tree']['model']
+        
+        # 1. Visualização da árvore completa
+        plt.figure(figsize=(25, 15))
+        plot_tree(dt_model, 
+                  filled=True,
+                  feature_names=[f'S{i+1}' for i in range(X_train.shape[1])],
+                  class_names=self.label_encoder.classes_,
+                  rounded=True,
+                  fontsize=8)
+        plt.title('Árvore de Decisão - Estrutura Completa', 
+                 fontsize=16, fontweight='bold', pad=20)
+        plt.tight_layout()
+        plt.savefig(f'{save_path}/arvore_decisao_completa.png', dpi=300, bbox_inches='tight')
+        print(f"  -> Salvo: {save_path}/arvore_decisao_completa.png")
+        
+        # 2. Visualização simplificada (primeiros níveis)
+        plt.figure(figsize=(20, 12))
+        plot_tree(dt_model, 
+                  max_depth=4,  # Mostra apenas os primeiros 4 níveis
+                  filled=True,
+                  feature_names=[f'S{i+1}' for i in range(X_train.shape[1])],
+                  class_names=self.label_encoder.classes_,
+                  rounded=True,
+                  fontsize=10)
+        plt.title('Árvore de Decisão - Primeiros 4 Níveis', 
+                 fontsize=16, fontweight='bold', pad=20)
+        plt.tight_layout()
+        plt.savefig(f'{save_path}/arvore_decisao_simplificada.png', dpi=300, bbox_inches='tight')
+        print(f"  -> Salvo: {save_path}/arvore_decisao_simplificada.png")
+        
+        # 3. Importância das features
+        feature_importance = dt_model.feature_importances_
+        feature_names = [f'S{i+1}' for i in range(len(feature_importance))]
+        
+        # Ordena por importância
+        importance_df = pd.DataFrame({
+            'Feature': feature_names,
+            'Importancia': feature_importance
+        }).sort_values('Importancia', ascending=False)
+        
+        # Mostra top 20 features mais importantes
+        top_features = importance_df.head(20)
+        
+        plt.figure(figsize=(12, 10))
+        plt.barh(range(len(top_features)), top_features['Importancia'], 
+                color=plt.cm.viridis(np.linspace(0.2, 0.8, len(top_features))))
+        plt.yticks(range(len(top_features)), top_features['Feature'])
+        plt.xlabel('Importância da Feature', fontsize=12, fontweight='bold')
+        plt.ylabel('Features', fontsize=12, fontweight='bold')
+        plt.title('Top 20 Features Mais Importantes - Árvore de Decisão', 
+                 fontsize=14, fontweight='bold', pad=20)
+        plt.grid(axis='x', alpha=0.3)
+        
+        # Adiciona valores nas barras
+        for i, v in enumerate(top_features['Importancia']):
+            plt.text(v, i, f' {v:.4f}', va='center', fontsize=9, fontweight='bold')
+        
+        plt.tight_layout()
+        plt.savefig(f'{save_path}/importancia_features_arvore.png', dpi=300, bbox_inches='tight')
+        print(f"  -> Salvo: {save_path}/importancia_features_arvore.png")
+        
+        # 4. Estatísticas da árvore
+        print(f"\nEstatísticas da Árvore:")
+        print(f"  -> Profundidade máxima: {dt_model.tree_.max_depth}")
+        print(f"  -> Número de nós: {dt_model.tree_.node_count}")
+        print(f"  -> Número de folhas: {dt_model.tree_.n_leaves}")
+        print(f"  -> Número de features utilizadas: {np.sum(feature_importance > 0)}")
+        
+        # 5. Regras textuais (primeiras regras)
+        print(f"\nRegras da Árvore (primeiros níveis):")
+        tree_rules = export_text(dt_model, 
+                                feature_names=[f'S{i+1}' for i in range(X_train.shape[1])],
+                                class_names=self.label_encoder.classes_,
+                                max_depth=3)  # Limita profundidade para não poluir
+        print(tree_rules)
+        
+        # 6. Mapeamento de features importantes para nomes originais
+        if feature_mapping:
+            print(f"\nTop 10 Features com Nomes Originais:")
+            for idx, row in top_features.head(10).iterrows():
+                original_name = feature_mapping.get(row['Feature'], 'Desconhecido')
+                print(f"  {row['Feature']} ({original_name}): {row['Importancia']:.4f}")
+        
+        plt.close('all')
+        
+        # Salva estatísticas em arquivo
+        stats_dict = {
+            'profundidade_maxima': dt_model.tree_.max_depth,
+            'numero_nos': dt_model.tree_.node_count,
+            'numero_folhas': dt_model.tree_.n_leaves,
+            'features_utilizadas': int(np.sum(feature_importance > 0)),
+            'acuracia': self.results['Decision Tree']['accuracy'],
+            'f1_score': self.results['Decision Tree']['f1_score']
+        }
+        
+        stats_df = pd.DataFrame([stats_dict])
+        stats_df.to_csv(f'{save_path}/estatisticas_arvore.csv', index=False)
+        print(f"  -> Salvo: {save_path}/estatisticas_arvore.csv")
+        
+        # Salva importância das features
+        importance_df.to_csv(f'{save_path}/importancia_features.csv', index=False)
+        print(f"  -> Salvo: {save_path}/importancia_features.csv")
+        
+        return importance_df, stats_dict
 
 
 def main():
@@ -572,7 +703,7 @@ def main():
     print("="*70 + "\n")
     
     # Configuração dos caminhos e classes
-    base_path = '/home/augustomotta/Documentos/mestrado/Trabalho 2'
+    base_path = '.'
     dados_path = f'{base_path}/dados'
     resultados_path = f'{base_path}/resultados'
     
@@ -608,6 +739,17 @@ def main():
     # Etapa 4: Visualizações
     trainer.plot_results(y_test, save_path=f'{resultados_path}/visualizacoes')
     
+    # Etapa 5: Análise Específica da Árvore de Decisão
+    print("\n" + "="*70)
+    print("ANÁLISE ESPECÍFICA DA ÁRVORE DE DECISÃO")
+    print("="*70)
+    
+    importance_df, tree_stats = trainer.analyze_decision_tree(
+        X_train, 
+        feature_mapping=processor.feature_mapping, 
+        save_path=f'{resultados_path}/visualizacoes'
+    )
+    
     print("\n" + "="*70)
     print("PIPELINE CONCLUÍDO COM SUCESSO!")
     print("="*70 + "\n")
@@ -617,10 +759,16 @@ def main():
     print(f"  → {resultados_path}/dados_processados/dados_organizados.csv")
     print(f"\n📈 Modelos:")
     print(f"  → {resultados_path}/modelos/comparacao_modelos.csv")
-    print(f"\n📉 Visualizações:")
+    print(f"\n📉 Visualizações Gerais:")
     print(f"  → {resultados_path}/visualizacoes/comparacao_modelos.png")
     print(f"  → {resultados_path}/visualizacoes/matriz_confusao.png")
     print(f"  → {resultados_path}/visualizacoes/curvas_roc.png")
+    print(f"\n🌳 Análise da Árvore de Decisão:")
+    print(f"  → {resultados_path}/visualizacoes/arvore_decisao_completa.png")
+    print(f"  → {resultados_path}/visualizacoes/arvore_decisao_simplificada.png")
+    print(f"  → {resultados_path}/visualizacoes/importancia_features_arvore.png")
+    print(f"  → {resultados_path}/visualizacoes/estatisticas_arvore.csv")
+    print(f"  → {resultados_path}/visualizacoes/importancia_features.csv")
     print()
 
 

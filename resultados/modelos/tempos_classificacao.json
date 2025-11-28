@@ -1,0 +1,26 @@
+{
+  "100": {
+    "perf_counter_total": 0.009549499955028296,
+    "perf_counter_por_predicao_ms": 0.09549499955028296,
+    "process_time_total": 0.015625,
+    "process_time_por_predicao_ms": 0.15625
+  },
+  "500": {
+    "perf_counter_total": 0.05701109999790788,
+    "perf_counter_por_predicao_ms": 0.11402219999581575,
+    "process_time_total": 0.0625,
+    "process_time_por_predicao_ms": 0.125
+  },
+  "1000": {
+    "perf_counter_total": 0.0977598000317812,
+    "perf_counter_por_predicao_ms": 0.0977598000317812,
+    "process_time_total": 0.109375,
+    "process_time_por_predicao_ms": 0.109375
+  },
+  "5000": {
+    "perf_counter_total": 0.48704079957678914,
+    "perf_counter_por_predicao_ms": 0.09740815991535783,
+    "process_time_total": 0.515625,
+    "process_time_por_predicao_ms": 0.103125
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "data_analise": "2025-11-28",
+  "codigo_original": {
+    "features": 2,
+    "problema": "Classificação simples (dados sintéticos)",
+    "tempo_medio_ms": 0.015,
+    "complexidade": "Baixa"
+  },
+  "nosso_modelo": {
+    "features": 62,
+    "problema": "Classificação de tipos de vias (dados reais)",
+    "tempo_medio_ms": 0.097,
+    "precisao_pct": 92.08,
+    "complexidade": "Alta",
+    "aplicabilidade": "Sistemas embarcados e tempo real"
+  },
+  "conclusao": "Modelo desenvolvido oferece excelente balance entre velocidade e precisão para problemas reais"
+}

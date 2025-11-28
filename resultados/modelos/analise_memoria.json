@@ -1,0 +1,23 @@
+{
+  "data_analise": "2025-11-28",
+  "baseado_em": "sample_dt_classifier_mem.py",
+  "modelo_info": {
+    "nos": 243,
+    "profundidade": 10,
+    "folhas": 122,
+    "features": 62,
+    "classes": 3
+  },
+  "tamanho_modelo": {
+    "sys_getsizeof_bytes": 48,
+    "sys_getsizeof_mb": 4.57763671875e-05,
+    "pympler_bytes": 2096,
+    "pympler_mb": 0.0019989013671875,
+    "arrays_internos_bytes": 19440,
+    "arrays_internos_mb": 0.0185394287109375
+  },
+  "sistema_completo": {
+    "total_bytes": 144,
+    "total_mb": 0.0001373291015625
+  }
+}
